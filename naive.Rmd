@@ -1,0 +1,116 @@
+---
+title: "NAIVE BAYES MODEL"
+author: "MarTech IPAM 2024"
+date: "2024-03-01"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, }
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(error = FALSE)
+
+
+```
+
+# Naive Bayes Model - Predictive Churn  
+
+## 1. Setup do ambiente
+
+### 1.1 Instalação e leitura das bibliotecas (pacotes) necessários
+```{r}
+
+options(repos = "https://cran.rstudio.com")
+
+rm(list = ls())
+if(!require(pacman)) install.packages("pacman")
+library(pacman)
+
+pacman::p_load(tidyverse,
+                 rmarkdown, 
+                 knitr, 
+                 GGally, 
+                 DataExplorer,
+                 gplots,
+                 SmartEDA,
+                 e1071,
+                 caret
+                 )
+p_loaded()
+
+```
+
+### 1.2 Carga e vista geral do ficheiro
+
+```{r}
+
+
+dados <- read.csv("BankChurners.csv")
+
+# excluir as ultimas duas colunas para ocultar o resultado anterior do projeto
+dados <- dados[ ,1:21] 
+
+#varificar se há alguma linha repetida
+anyDuplicated(dados)
+
+ExpData(dados,type=1) 
+ExpData(dados,type=2) 
+
+
+str(dados) 
+
+plot_intro(dados)
+```
+
+## 2 Machine Learning
+
+### 2.1 Treinamento do modelo
+```{r}
+# Defina a semente para reproduzibilidade
+set.seed(123)
+
+# define a proporção de dados que será usada para treinamento (por exemplo, 0.7 para 70%)
+index <- createDataPartition(dados$Attrition_Flag, p = 0.7, list = FALSE)
+
+# Crie conjuntos de treinamento e teste com base nos índices
+conjunto_treinamento <- dados[index, ]
+conjunto_teste <- dados[-index, ]
+
+# Criar um modelo Naive Bayes
+modelo_nb <- naiveBayes(Attrition_Flag ~ . -CLIENTNUM, data = conjunto_treinamento)
+
+
+```
+
+### 2.2 Teste do modelo
+```{r}
+# Fazer previsões
+previsoes <- predict(modelo_nb, conjunto_teste)
+
+
+```
+
+### 2.3 Avaliar o Modelo pela Matriz de Confusão
+```{r}
+# Supondo que 'verdadeiro' são os rótulos reais e 'previsoes' são as previsões do modelo
+matriz_confusao <- table(conjunto_teste$Attrition_Flag, previsoes)
+print(matriz_confusao)
+acuracia <- round(sum(diag(matriz_confusao)) / sum(matriz_confusao),3)
+precisao <- round(matriz_confusao[1, 1] / sum(matriz_confusao[, 1]),3)  
+sensibilidade <- round(matriz_confusao[1, 1] / sum(matriz_confusao[1,]),3)  
+npv <- round(matriz_confusao[2, 2] / sum(matriz_confusao[2, ]),3)  
+esp <- round(matriz_confusao[2, 2] / sum(matriz_confusao[ ,2]),3)  
+
+print(" ")
+print(paste("A precisão do modelo e:", precisao))
+print(paste("A sensibilidade do modelo e:", sensibilidade))
+print(paste("o NPV do modelo e:", npv))
+print(paste("A especificidade do modelo e:", esp))
+print(paste("A acurácia do modelo e:", acuracia))
+
+
+```
+
